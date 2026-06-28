@@ -1,0 +1,8 @@
+xgboost
+streamlit
+pandas
+scikit-learn
+requests
+plotly
+SQLAlchemy
+psycopg2-binary

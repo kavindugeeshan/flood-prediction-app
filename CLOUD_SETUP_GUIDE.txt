@@ -1,0 +1,51 @@
+======================================================
+CLOUD MIGRATION SETUP GUIDE (Supabase + GitHub + Streamlit)
+======================================================
+
+Follow these instructions perfectly to deploy your flood prediction system to the cloud for free!
+
+------------------------------------------------------
+STEP 1: SET UP THE SUPABASE DATABASE
+------------------------------------------------------
+1. Go to https://supabase.com/ and log into your new account.
+2. Click "New Project", give it a name (e.g. "FloodPredictionDB"), and create a strong database password. (SAVE THIS PASSWORD).
+3. Wait a few minutes for the project to build.
+4. Once built, go to "Settings" (the gear icon on the left) -> "Database".
+5. Scroll down to "Connection String" and select "URI".
+6. Copy the connection string. It will look something like this:
+   postgresql://postgres.yourprojectid:[YOUR-PASSWORD]@aws-0-region.pooler.supabase.com:6543/postgres
+7. Replace [YOUR-PASSWORD] with the actual password you just created. THIS IS YOUR 'DB_URL'! Keep it safe.
+
+------------------------------------------------------
+STEP 2: UPLOAD TO GITHUB & AUTOMATE INGESTION
+------------------------------------------------------
+1. Go to https://github.com/ and log in.
+2. Click the "+" icon at the top right and select "New repository".
+3. Name it "flood-prediction-app", set it to "Private", and click "Create repository".
+4. Now, you need to upload the files from your LOCAL 'cloud_version' folder to this repository. You can just drag and drop the files directly into the browser!
+   * IMPORTANT: Ensure the '.github/workflows/ingest.yml' folder structure is perfectly preserved when you drag it in.
+5. After the files are uploaded, go to the "Settings" tab of your GitHub repository.
+6. On the left menu, expand "Secrets and variables" and click "Actions".
+7. Click the green "New repository secret" button.
+8. Set the Name to: DB_URL
+9. Set the Secret to: your Supabase connection string from Step 1.
+10. Click "Add secret".
+(Your ingestion script is now fully automated! It will run every 15 minutes via GitHub Actions.)
+
+------------------------------------------------------
+STEP 3: DEPLOY THE STREAMLIT DASHBOARD
+------------------------------------------------------
+1. Go to https://share.streamlit.io/ and log in with your GitHub account.
+2. Click "New app".
+3. Select your "flood-prediction-app" repository from the dropdown.
+4. Set the Main file path to: app.py
+5. BEFORE you click Deploy, click on "Advanced settings..." at the bottom.
+6. In the "Secrets" text box, type the following:
+
+DB_URL = "your_supabase_connection_string_here"
+
+7. Click Save, then click "Deploy!"
+
+======================================================
+YOUR APP IS NOW LIVE 24/7 IN THE CLOUD!
+======================================================
