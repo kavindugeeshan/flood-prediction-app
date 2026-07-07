@@ -53,14 +53,44 @@ def get_alert_numeric(station, water_level):
     if water_level >= levels['alert']: return 0.5
     return 0.0
 
+from sqlalchemy import create_engine
+import os
+
 @st.cache_data(ttl=60)
 def load_data():
+    # 1. Check if running on Streamlit Cloud with Supabase secrets
+    if "DB_URL" in st.secrets:
+        try:
+            db_url = st.secrets["DB_URL"]
+            if db_url.startswith("postgres://"):
+                db_url = db_url.replace("postgres://", "postgresql://", 1)
+            
+            engine = create_engine(db_url)
+            df = pd.read_sql("SELECT * FROM records", engine)
+            if not df.empty:
+                df['timestamp'] = pd.to_datetime(df['timestamp'], format='mixed')
+            return df
+        except Exception as e:
+            st.error(f"Supabase connection error: {e}")
+            return pd.DataFrame()
+            
+    # 2. Fallback to Local SQLite
+    if not os.path.exists('flood_data.db'):
+        try:
+            import ingest
+            ingest.ingest()
+        except Exception as e:
+            print(f"Failed to auto-ingest locally: {e}")
+            return pd.DataFrame()
+            
     if not os.path.exists('flood_data.db'):
         return pd.DataFrame()
+        
     conn = sqlite3.connect('flood_data.db')
     df = pd.read_sql("SELECT * FROM records", conn)
     conn.close()
-    df['timestamp'] = pd.to_datetime(df['timestamp'], format='mixed')
+    if not df.empty:
+        df['timestamp'] = pd.to_datetime(df['timestamp'], format='mixed')
     return df
 
 def prepare_features(df):
