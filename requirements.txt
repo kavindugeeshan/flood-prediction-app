@@ -6,3 +6,4 @@ requests
 plotly
 SQLAlchemy
 psycopg2-binary
+streamlit-option-menu
