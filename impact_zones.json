@@ -1,0 +1,158 @@
+{
+  "Norwood": {
+    "unit": "m",
+    "thresholds": {
+      "alert": 1.50,
+      "minor": 3.00,
+      "major": 4.50
+    },
+    "impact_zones": {
+      "near_alert": [
+        "Low-lying pedestrian pathways lining the reservoir feeders",
+        "Internal estate tea patch drainage networks"
+      ],
+      "near_minor": [
+        "Low-elevation segments of the Norwood-Upcot road",
+        "Localized agricultural lines and outer factory processing yards"
+      ],
+      "near_major": [
+        "Estate staff housing lines closest to the river banks",
+        "Rural transportation routes across the immediate Norwood basin floor"
+      ]
+    }
+  },
+  "Kithulgala": {
+    "unit": "m",
+    "thresholds": {
+      "alert": 3.00,
+      "minor": 4.00,
+      "major": 6.00
+    },
+    "impact_zones": {
+      "near_alert": [
+        "Water-sports/rafting launch points along the banks",
+        "Immediate riverside campsites and agricultural collection spots"
+      ],
+      "near_minor": [
+        "Low-elevation hotels and eco-resorts bordering the river corridor",
+        "Rural suspension footbridge access nodes"
+      ],
+      "near_major": [
+        "Primary riverside homesteads and residential properties",
+        "Low-lying cultivation fields and immediate access roads parallel to the river"
+      ]
+    }
+  },
+  "Deraniyagala": {
+    "unit": "m",
+    "thresholds": {
+      "alert": 4.80,
+      "minor": 5.80,
+      "major": 6.40
+    },
+    "impact_zones": {
+      "near_alert": [
+        "Minor riverside agricultural lanes",
+        "Low-elevation crop layouts lining the Seethawaka river boundary"
+      ],
+      "near_minor": [
+        "Isolated rural road crossings",
+        "Residential perimeters situated on the lowest terraces of the valley"
+      ],
+      "near_major": [
+        "Main valley homesteads in the Deraniyagala area",
+        "Local market pathways and rural access roads near the stream junction"
+      ]
+    }
+  },
+  "Holombuwa": {
+    "unit": "m",
+    "thresholds": {
+      "alert": 3.00,
+      "minor": 3.40,
+      "major": 5.00
+    },
+    "impact_zones": {
+      "near_alert": [
+        "Narrow, low-lying farming valleys",
+        "Minor agricultural water channels along the Gurugoda Oya"
+      ],
+      "near_minor": [
+        "Community access roads linking agricultural pockets",
+        "Low-lying boundaries near Mirigama, Giriulla, and Ruwanwella edges"
+      ],
+      "near_major": [
+        "Extensive low-elevation cultivation fields",
+        "Rural homestead blocks and low-lying regional bypass routes"
+      ]
+    }
+  },
+  "Glencourse": {
+    "unit": "m",
+    "thresholds": {
+      "alert": 15.00,
+      "minor": 16.50,
+      "major": 19.00
+    },
+    "impact_zones": {
+      "near_alert": [
+        "Isolated low-elevation agricultural plots",
+        "Immediate riverside open areas along the Avissawella corridor"
+      ],
+      "near_minor": [
+        "Riverside homesteads in Ruwanwella and Sitawaka boundaries",
+        "Low-elevation segments of the main Colombo-Hatton road (A7)"
+      ],
+      "near_major": [
+        "Outer urban fringes and low-lying properties of Avissawella town",
+        "Commercial spaces along the main transport path and low floodplain neighborhoods"
+      ]
+    }
+  },
+  "Hanwella": {
+    "unit": "m",
+    "thresholds": {
+      "alert": 7.00,
+      "minor": 8.00,
+      "major": 10.00
+    },
+    "impact_zones": {
+      "near_alert": [
+        "Riverside cultivation fields and crop beds",
+        "Sand-mining accessibility roads and unpaved riverbank tracks"
+      ],
+      "near_minor": [
+        "Low-lying residential clusters in Pugoda, Malwana, and Dompe",
+        "Low-elevation fringes of Hanwella town center"
+      ],
+      "near_major": [
+        "Widespread inundation across Kaduwela town center and commercial zones",
+        "Low-lying industrial buffers in Biyagama, Dompe, and Hanwella",
+        "Critical links and access roads connecting to the Outer Circular Expressway"
+      ]
+    }
+  },
+  "Nagalagam Street": {
+    "unit": "m",
+    "thresholds": {
+      "alert": 1.20,
+      "minor": 1.50,
+      "major": 2.00
+    },
+    "impact_zones": {
+      "near_alert": [
+        "Unpaved riverbank pathways and localized low drainage canals",
+        "Immediate wetland buffers near Grandpass and Sedawatta boundaries"
+      ],
+      "near_minor": [
+        "Low residential zones in Kolonnawa, Wellampitiya, and Kotikawatta",
+        "Low-elevation neighborhoods in Sedawatta, Kelaniya, and localized Colombo-Kandy road drainage backups"
+      ],
+      "near_major": [
+        "Severe, widespread urban flooding crippling Kolonnawa and Wellampitiya cores",
+        "Heavy inundation in Mattakkuliya, Ambatale, Kelaniya, and informal river delta settlements",
+        "Paralyzed transit across low-lying perimeters of the main Colombo-Kandy road corridor"
+      ]
+    }
+  }
+}
