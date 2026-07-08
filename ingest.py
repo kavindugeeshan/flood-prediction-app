@@ -8,6 +8,16 @@ from sqlalchemy import create_engine
 
 STATIONS = ['Deraniyagala', 'Glencourse', 'Hanwella', 'Holombuwa', 'Kithulgala', 'Nagalagam Street', 'Norwood']
 
+ALERT_LEVELS = {
+    'Deraniyagala': {'minor': 4.5, 'major': 5.0, 'alert': 4.0},
+    'Glencourse': {'minor': 15.0, 'major': 16.5, 'alert': 14.0},
+    'Hanwella': {'minor': 8.0, 'major': 10.0, 'alert': 7.0},
+    'Holombuwa': {'minor': 3.0, 'major': 3.4, 'alert': 2.5},
+    'Kithulgala': {'minor': 4.0, 'major': 5.0, 'alert': 3.0},
+    'Nagalagam Street': {'minor': 1.5, 'major': 2.2, 'alert': 1.2},
+    'Norwood': {'minor': 1.5, 'major': 3.0, 'alert': 1.0}
+}
+
 def fetch_arcgis_data():
     print("Fetching ArcGIS data...")
     url = "https://services3.arcgis.com/J7ZFXmR8rSmQ3FGf/arcgis/rest/services/gauges_2_view/FeatureServer/0/query"
@@ -99,19 +109,30 @@ def ingest():
         print("No ArcGIS data found.")
         return
         
-    # Merge Open Meteo data for Nagalagam Street
-    # Create a full dataframe and merge
-    merged = pd.merge(arcgis_df, om_df, on='timestamp', how='left')
-    
-    # Fill Nagalagam Street rain_fall with om_rain_fall
-    nagalagam_mask = merged['station'] == 'Nagalagam Street'
-    merged.loc[nagalagam_mask, 'rain_fall'] = merged.loc[nagalagam_mask, 'om_rain_fall']
-    
-    # Drop the temporary open-meteo column
-    final_df = merged.drop(columns=['om_rain_fall'])
+    # Merge Open Meteo data for Nagalagam Street if available
+    if not om_df.empty:
+        merged = pd.merge(arcgis_df, om_df, on='timestamp', how='left')
+        nagalagam_mask = merged['station'] == 'Nagalagam Street'
+        merged.loc[nagalagam_mask, 'rain_fall'] = merged.loc[nagalagam_mask, 'om_rain_fall']
+        final_df = merged.drop(columns=['om_rain_fall'])
+    else:
+        print("Warning: Open-Meteo data is empty, proceeding with ArcGIS data only.")
+        final_df = arcgis_df.copy()
     
     # Fill any remaining NaNs with 0 for rainfall, and ffill/bfill for water levels
     final_df['rain_fall'] = final_df['rain_fall'].fillna(0)
+    
+    # Calculate numerical alert levels (0.0=Normal, 1.0=Alert, 2.0=Minor, 3.0=Major)
+    def get_alert_numeric(station, wl):
+        if pd.isna(wl): return 0.0
+        levels = ALERT_LEVELS.get(station)
+        if not levels: return 0.0
+        if wl >= levels['major']: return 3.0
+        elif wl >= levels['minor']: return 2.0
+        elif wl >= levels['alert']: return 1.0
+        else: return 0.0
+        
+    final_df['alert_level'] = final_df.apply(lambda row: get_alert_numeric(row['station'], row['water_level']), axis=1)
     
     # Save to Postgres
     print("Saving to Postgres database...")
