@@ -2,9 +2,9 @@ import requests
 import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 import pandas as pd
+import sqlite3
 import datetime
-import os
-from sqlalchemy import create_engine
+import time
 
 STATIONS = ['Deraniyagala', 'Glencourse', 'Hanwella', 'Holombuwa', 'Kithulgala', 'Nagalagam Street', 'Norwood']
 
@@ -97,11 +97,6 @@ def fetch_open_meteo_data():
     return pd.DataFrame()
 
 def ingest():
-    db_url = os.environ.get("DB_URL")
-    if not db_url:
-        raise ValueError("DB_URL environment variable is missing!")
-    engine = create_engine(db_url)
-    
     arcgis_df = fetch_arcgis_data()
     om_df = fetch_open_meteo_data()
     
@@ -134,38 +129,46 @@ def ingest():
         
     final_df['alert_level'] = final_df.apply(lambda row: get_alert_numeric(row['station'], row['water_level']), axis=1)
     
-    # Save to Postgres
-    print("Saving to Postgres database...")
+    # Save to SQLite
+    print("Saving to SQLite database...")
+    conn = sqlite3.connect('flood_data.db')
     
     try:
-        # Load existing database to append
-        existing_df = pd.read_sql("SELECT * FROM records", engine)
-        existing_df['timestamp'] = pd.to_datetime(existing_df['timestamp'], format='mixed')
-        print(f"DEBUG: existing_df has {len(existing_df)} rows")
-        print(f"DEBUG: final_df has {len(final_df)} rows")
-        combined = pd.concat([existing_df, final_df])
-        combined = combined.drop_duplicates(subset=['timestamp', 'station'], keep='last')
-        print(f"DEBUG: combined has {len(combined)} rows after concat and deduplication")
-    except Exception as e:
-        print(f"Warning: Could not read existing database, starting fresh. Reason: {e}")
-        # Table might not exist yet or formatting error
-        combined = final_df.drop_duplicates(subset=['timestamp', 'station'], keep='last')
+        # Get the latest timestamp currently in the database to avoid duplicates
+        max_time_df = pd.read_sql("SELECT MAX(timestamp) as max_ts FROM records", conn)
+        max_ts = pd.to_datetime(max_time_df['max_ts'].iloc[0])
         
-    combined = combined.sort_values(by=['timestamp', 'station']).reset_index(drop=True)
-    combined.to_sql('records', engine, if_exists='replace', index=False)
-    
-    print(f"Ingestion complete. Database has {len(combined)} records.")
-    
-    print("\n--- Latest Data Segment (Nagalagam Street now in meters) ---")
-    latest_per_station = combined.sort_values('timestamp').groupby('station').tail(1)
-    print(latest_per_station[['timestamp', 'station', 'water_level', 'rain_fall']].to_string(index=False))
-    print("\n")
+        # Filter new data to only include rows newer than the database's latest timestamp
+        if not pd.isna(max_ts):
+            final_df = final_df[final_df['timestamp'] > max_ts]
+            
+    except Exception as e:
+        print(f"Warning: Could not query max timestamp (table might be empty or missing). Reason: {e}")
+        # Proceed with inserting all fetched data if table is new
+        
+    if final_df.empty:
+        print("No new records to insert. Database is already up to date.")
+    else:
+        final_df = final_df.sort_values(by=['timestamp', 'station']).reset_index(drop=True)
+        # Use append! We never drop the table or load old rows into memory anymore.
+        final_df.to_sql('records', conn, if_exists='append', index=False)
+        print(f"Successfully appended {len(final_df)} new records to the database.")
+        
+        print("\n--- Latest Inserted Segment ---")
+        latest_per_station = final_df.sort_values('timestamp').groupby('station').tail(1)
+        print(latest_per_station[['timestamp', 'station', 'water_level', 'rain_fall']].to_string(index=False))
+        print("\n")
+        
+    conn.close()
 
 if __name__ == "__main__":
-    print("Starting GitHub Actions ingestion run...")
-    try:
-        print(f"\n[{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Starting data fetch cycle...")
-        ingest()
-    except Exception as e:
-        print(f"Error during ingestion cycle: {e}")
-        raise e
+    print("Starting continuous ingestion... (Press Ctrl+C to stop)")
+    while True:
+        try:
+            print(f"\n[{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Starting data fetch cycle...")
+            ingest()
+        except Exception as e:
+            print(f"Error during ingestion cycle: {e}")
+            
+        print("Sleeping for 15 minutes before next fetch...")
+        time.sleep(900)
