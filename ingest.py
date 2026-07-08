@@ -2,11 +2,21 @@ import requests
 import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 import pandas as pd
+import sqlite3
 import datetime
-import os
-from sqlalchemy import create_engine
+import time
 
 STATIONS = ['Deraniyagala', 'Glencourse', 'Hanwella', 'Holombuwa', 'Kithulgala', 'Nagalagam Street', 'Norwood']
+
+ALERT_LEVELS = {
+    'Deraniyagala': {'minor': 4.5, 'major': 5.0, 'alert': 4.0},
+    'Glencourse': {'minor': 15.0, 'major': 16.5, 'alert': 14.0},
+    'Hanwella': {'minor': 8.0, 'major': 10.0, 'alert': 7.0},
+    'Holombuwa': {'minor': 3.0, 'major': 3.4, 'alert': 2.5},
+    'Kithulgala': {'minor': 4.0, 'major': 5.0, 'alert': 3.0},
+    'Nagalagam Street': {'minor': 1.5, 'major': 2.2, 'alert': 1.2},
+    'Norwood': {'minor': 1.5, 'major': 3.0, 'alert': 1.0}
+}
 
 def fetch_arcgis_data():
     print("Fetching ArcGIS data...")
@@ -87,11 +97,6 @@ def fetch_open_meteo_data():
     return pd.DataFrame()
 
 def ingest():
-    db_url = os.environ.get("DB_URL")
-    if not db_url:
-        raise ValueError("DB_URL environment variable is missing!")
-    engine = create_engine(db_url)
-    
     arcgis_df = fetch_arcgis_data()
     om_df = fetch_open_meteo_data()
     
@@ -99,26 +104,39 @@ def ingest():
         print("No ArcGIS data found.")
         return
         
-    # Merge Open Meteo data for Nagalagam Street
-    # Create a full dataframe and merge
-    merged = pd.merge(arcgis_df, om_df, on='timestamp', how='left')
-    
-    # Fill Nagalagam Street rain_fall with om_rain_fall
-    nagalagam_mask = merged['station'] == 'Nagalagam Street'
-    merged.loc[nagalagam_mask, 'rain_fall'] = merged.loc[nagalagam_mask, 'om_rain_fall']
-    
-    # Drop the temporary open-meteo column
-    final_df = merged.drop(columns=['om_rain_fall'])
+    # Merge Open Meteo data for Nagalagam Street if available
+    if not om_df.empty:
+        merged = pd.merge(arcgis_df, om_df, on='timestamp', how='left')
+        nagalagam_mask = merged['station'] == 'Nagalagam Street'
+        merged.loc[nagalagam_mask, 'rain_fall'] = merged.loc[nagalagam_mask, 'om_rain_fall']
+        final_df = merged.drop(columns=['om_rain_fall'])
+    else:
+        print("Warning: Open-Meteo data is empty, proceeding with ArcGIS data only.")
+        final_df = arcgis_df.copy()
     
     # Fill any remaining NaNs with 0 for rainfall, and ffill/bfill for water levels
     final_df['rain_fall'] = final_df['rain_fall'].fillna(0)
     
-    # Save to Postgres
-    print("Saving to Postgres database...")
+    # Calculate numerical alert levels (0.0=Normal, 1.0=Alert, 2.0=Minor, 3.0=Major)
+    def get_alert_numeric(station, wl):
+        if pd.isna(wl): return 0.0
+        levels = ALERT_LEVELS.get(station)
+        if not levels: return 0.0
+        if wl >= levels['major']: return 3.0
+        elif wl >= levels['minor']: return 2.0
+        elif wl >= levels['alert']: return 1.0
+        else: return 0.0
+        
+    final_df['alert_level'] = final_df.apply(lambda row: get_alert_numeric(row['station'], row['water_level']), axis=1)
     
+    # Save to SQLite
+    print("Saving to SQLite database...")
+    conn = sqlite3.connect('flood_data.db')
+    
+    # We use if_exists='append', but we need to handle duplicates.
+    # To handle duplicates easily in Pandas, we can read the existing table, append, drop duplicates, and write back.
     try:
-        # Load existing database to append
-        existing_df = pd.read_sql("SELECT * FROM records", engine)
+        existing_df = pd.read_sql("SELECT * FROM records", conn)
         existing_df['timestamp'] = pd.to_datetime(existing_df['timestamp'], format='mixed')
         print(f"DEBUG: existing_df has {len(existing_df)} rows")
         print(f"DEBUG: final_df has {len(final_df)} rows")
@@ -131,7 +149,8 @@ def ingest():
         combined = final_df.drop_duplicates(subset=['timestamp', 'station'], keep='last')
         
     combined = combined.sort_values(by=['timestamp', 'station']).reset_index(drop=True)
-    combined.to_sql('records', engine, if_exists='replace', index=False)
+    combined.to_sql('records', conn, if_exists='replace', index=False)
+    conn.close()
     
     print(f"Ingestion complete. Database has {len(combined)} records.")
     
@@ -141,10 +160,13 @@ def ingest():
     print("\n")
 
 if __name__ == "__main__":
-    print("Starting GitHub Actions ingestion run...")
-    try:
-        print(f"\n[{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Starting data fetch cycle...")
-        ingest()
-    except Exception as e:
-        print(f"Error during ingestion cycle: {e}")
-        raise e
+    print("Starting continuous ingestion... (Press Ctrl+C to stop)")
+    while True:
+        try:
+            print(f"\n[{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Starting data fetch cycle...")
+            ingest()
+        except Exception as e:
+            print(f"Error during ingestion cycle: {e}")
+            
+        print("Sleeping for 15 minutes before next fetch...")
+        time.sleep(900)
