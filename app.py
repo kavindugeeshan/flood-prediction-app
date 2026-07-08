@@ -48,9 +48,9 @@ def get_alert_numeric(station, water_level):
     if key not in ALERT_LEVELS: key = station.replace("Nagalagam", "Nagalagam Street")
     
     levels = ALERT_LEVELS[key]
-    if water_level >= levels['major']: return 2.0
-    if water_level >= levels['minor']: return 1.0
-    if water_level >= levels['alert']: return 0.5
+    if water_level >= levels['major']: return 3.0
+    if water_level >= levels['minor']: return 2.0
+    if water_level >= levels['alert']: return 1.0
     return 0.0
 
 from sqlalchemy import create_engine
