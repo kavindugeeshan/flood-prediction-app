@@ -5,5 +5,5 @@ scikit-learn
 requests
 plotly
 SQLAlchemy
-psycopg2-binary
+psycopg[binary]
 streamlit-option-menu
