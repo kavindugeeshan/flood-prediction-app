@@ -355,7 +355,7 @@ if page == "Predictions":
                 lon="lon",
                 zoom=9, 
                 height=350
-                map_style="open-street-map
+                map_style="open-street-map"
             )
             
             fig_map.data[0].update(
