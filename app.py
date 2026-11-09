@@ -354,7 +354,7 @@ if page == "Predictions":
                 lat="lat", 
                 lon="lon",
                 zoom=9, 
-                height=350
+                height=350,
                 map_style="open-street-map"
             )
             
