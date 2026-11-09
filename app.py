@@ -349,12 +349,13 @@ if page == "Predictions":
             map_data_all = pd.DataFrame(all_coords)
             
             # Plot all stations
-            fig_map = px.scatter_mapbox(
+            fig_map = px.scatter_map(
                 map_data_all, 
                 lat="lat", 
                 lon="lon",
                 zoom=9, 
                 height=350
+                map_style="open-street-map
             )
             
             fig_map.data[0].update(
@@ -396,10 +397,13 @@ if page == "Predictions":
                 pass
             
             fig_map.update_layout(
-                mapbox_style="open-street-map",
-                margin={"r":0,"t":0,"l":0,"b":0},
-                showlegend=False,
-                mapbox_center={"lat": 6.95, "lon": 80.20} # Center on basin
+                map=dict(
+                    style="open-street-map",
+                    center={"lat": 6.95, "lon": 80.20},
+                    zoom=9
+                ),
+                margin={"r": 0, "t": 0, "l": 0, "b": 0},
+                showlegend=False
             )
             st.plotly_chart(fig_map, use_container_width=True)
 
