@@ -8,7 +8,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 import os
 import json
-import psycopg
+import psycopg2
 st.set_page_config(page_title="Flash Flood Prediction", layout="wide")
 
 STATIONS = ['Norwood', 'Kithulgala', 'Deraniyagala', 'Holombuwa', 'Glencourse', 'Hanwella', 'Nagalagam Street']
